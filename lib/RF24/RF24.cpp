@@ -727,9 +727,14 @@ bool RF24::begin(void)
 
     powerUp(); //Power up by default when begin() is called
 
+// *** library default ***
     // Enable PTX, do not write CE high so radio will remain in standby I mode ( 130us max to transition to RX or TX instead of 1500us from powerUp )
     // PTX should use only 22uA of power
-    write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) & ~_BV(PRIM_RX));
+    // write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) & ~_BV(PRIM_RX));
+// ***********************
+// *** Kodiak modifying to enable PRX ***
+    write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) & _BV(PRIM_RX));
+// **************************************
 
     // if setup is 0 or ff then there was no response from module
     return (setup != 0 && setup != 0xff);
