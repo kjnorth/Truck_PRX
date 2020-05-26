@@ -7,10 +7,13 @@
 #include <Arduino.h>
 #include "ConfigPRX.h"
 #include "..\lib\DataLog\DataLog.h"
-#include "..\lib\arduino-printf\src\printf.h"
 #include "stdio.h"
 #include "nRF24L01.h"
 #include "RF24.h"
+
+// #define USE_IRQ_PIN
+
+bool IsConnected(void);
 
 RX_TO_TX rtt;
 RF24 radio(RF_CE_PIN, RF_CSN_PIN); // Create a Radio
@@ -18,10 +21,13 @@ RF24 radio(RF_CE_PIN, RF_CSN_PIN); // Create a Radio
 void setup() {
   Serial.begin(115200);
 
-  rtt.SwitchStatus = 0x9F;
+  rtt.SwitchStatus = 0x9D;
   rtt.SolenoidStatus = 0x5E;
+  rtt.Count = 0;
 
+#ifdef USE_IRQ_PIN
   pinMode(RF_IRQ_PIN, INPUT);
+#endif
 
   if (!radio.begin())
     Serial.println("PRX failed to initialize");
@@ -29,35 +35,64 @@ void setup() {
     // RF24 library begin() function modified to enable PRX mode
     radio.setAddressWidth(5); // set address size to 5 bytes
     radio.setChannel(RF_CHANNEL); // set communication channel
-    radio.setPayloadSize(NUM_RTT_BYTES); // set max transmission payload size to sizeof RTT data struct
+    radio.setPayloadSize(NUM_TTR_BYTES); // set payload size to number of bytes being RECEIVED
     radio.enableAckPayload(); // enable ability to add payload sent with auto ACK
     radio.enableDynamicAck();
     radio.setPALevel(RF24_PA_LOW); // set power amplifier level. Using LOW for tests on bench. Should use HIGH on PL/Truck
     radio.setDataRate(RF24_1MBPS); // set data rate to most reliable speed
+    radio.flush_rx();
     radio.openReadingPipe(0, RF_PRX_READ_ADDR);
-    radio.startListening(); // PRX now needs to start listening for packets
     radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
+    radio.startListening(); // PRX now needs to start listening for packets
     Serial.println("PRX initialization successful");
   }
 }
 
-unsigned long curTime = 0;
-static unsigned long preTime = 0;
+unsigned long curTime = millis();
+static unsigned long preLogTime = curTime;
+static unsigned long lastReceiveTime = curTime;
+static TX_TO_RX ttr;
 void loop() {
   curTime = millis();
-  if (curTime - preTime >= 10) { // run at 100Hz frequency
-    radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
-    preTime = curTime;
-  }
+  IsConnected();
 
+#ifdef USE_IRQ_PIN  
   if (LOW == digitalRead(RF_IRQ_PIN)) {
-    bool tx_ok, tx_fail, rx_ready;
+    bool tx_ok=false, tx_fail=false, rx_ready=false;
     radio.whatHappened(tx_ok, tx_fail, rx_ready);
     if (rx_ready || radio.available()) {
-      static TX_TO_RX ttr;
-      static int i = 0;
+#else 
+    if (radio.available()) {
+#endif      
       radio.read(&ttr, NUM_TTR_BYTES);
-      LogInfo(F("phase 0x%X, ledControl 0x%X, encoder 0x%X, count %d\n"), ttr.Phase, ttr.LEDControl, ttr.FrontEncoder, ++i);
+      lastReceiveTime = curTime;
+      /** @note in Truck code, will want to update the ack payload every
+       * iteration of the main loop */
+      rtt.SwitchStatus++;
+      rtt.SolenoidStatus++;
+      rtt.Count++;
+      radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     }
+#ifdef USE_IRQ_PIN
   }
+#endif
+
+  if (curTime - preLogTime >= 1000) {
+    LogInfo(F("phase 0x%X, ledControl 0x%X, encoder %ld, count %u, isConnected %d\n"),
+              ttr.Phase, ttr.LEDControl, ttr.FrontEncoder, ttr.Count, IsConnected());
+    preLogTime = curTime;
+  }
+}
+
+bool IsConnected(void) {
+  static bool conn = false;
+  if (curTime - lastReceiveTime >= 250 && conn) {
+    LogInfo("connection to PTX is lost!\n");
+    conn = false;
+  }
+  else if (lastReceiveTime > 0 && curTime - lastReceiveTime < 250 && !conn) {
+    LogInfo("established connection to PTX\n");
+    conn = true;
+  }
+  return conn;
 }

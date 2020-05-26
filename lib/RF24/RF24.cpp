@@ -733,7 +733,7 @@ bool RF24::begin(void)
     // write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) & ~_BV(PRIM_RX));
 // ***********************
 // *** Kodiak modifying to enable PRX ***
-    write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) & _BV(PRIM_RX));
+    write_register(NRF_CONFIG, (read_register(NRF_CONFIG)) | _BV(PRIM_RX));
 // **************************************
 
     // if setup is 0 or ff then there was no response from module
