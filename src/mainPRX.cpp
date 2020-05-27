@@ -7,11 +7,8 @@
 #include <Arduino.h>
 #include "ConfigPRX.h"
 #include "..\lib\DataLog\DataLog.h"
-#include "stdio.h"
 #include "nRF24L01.h"
 #include "RF24.h"
-
-// #define USE_IRQ_PIN
 
 bool IsConnected(void);
 
@@ -25,7 +22,7 @@ void setup() {
   rtt.SolenoidStatus = 0x5E;
   rtt.Count = 0;
 
-#ifdef USE_IRQ_PIN
+#ifdef RF_USE_IRQ_PIN
   pinMode(RF_IRQ_PIN, INPUT);
 #endif
 
@@ -40,7 +37,6 @@ void setup() {
     radio.enableDynamicAck();
     radio.setPALevel(RF24_PA_LOW); // set power amplifier level. Using LOW for tests on bench. Should use HIGH on PL/Truck
     radio.setDataRate(RF24_1MBPS); // set data rate to most reliable speed
-    radio.flush_rx();
     radio.openReadingPipe(0, RF_PRX_READ_ADDR);
     radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     radio.startListening(); // PRX now needs to start listening for packets
@@ -56,7 +52,7 @@ void loop() {
   curTime = millis();
   IsConnected();
 
-#ifdef USE_IRQ_PIN  
+#ifdef RF_USE_IRQ_PIN  
   if (LOW == digitalRead(RF_IRQ_PIN)) {
     bool tx_ok=false, tx_fail=false, rx_ready=false;
     radio.whatHappened(tx_ok, tx_fail, rx_ready);
@@ -73,7 +69,7 @@ void loop() {
       rtt.Count++;
       radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     }
-#ifdef USE_IRQ_PIN
+#ifdef RF_USE_IRQ_PIN
   }
 #endif
 
