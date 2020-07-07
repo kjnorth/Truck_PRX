@@ -13,14 +13,13 @@
 bool IsConnected(void);
 
 RX_TO_TX rtt;
-RF24 radio(RF_CE_PIN, RF_CSN_PIN); // Create a Radio
+RF24 radio(RF_CE_PIN, RF_CSN_PIN); // Create a radio object
 
 void setup() {
   Serial.begin(115200);
 
   rtt.SwitchStatus = 0x9D;
   rtt.SolenoidStatus = 0x5E;
-  rtt.Count = 0;
 
 #ifdef RF_USE_IRQ_PIN
   pinMode(RF_IRQ_PIN, INPUT);
@@ -66,7 +65,6 @@ void loop() {
        * iteration of the main loop */
       rtt.SwitchStatus++;
       rtt.SolenoidStatus++;
-      rtt.Count++;
       radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     }
 #ifdef RF_USE_IRQ_PIN
@@ -74,8 +72,8 @@ void loop() {
 #endif
 
   if (curTime - preLogTime >= 1000) {
-    LogInfo(F("phase 0x%X, ledControl 0x%X, encoder %ld, count %u, isConnected %d\n"),
-              ttr.Phase, ttr.LEDControl, ttr.FrontEncoder, ttr.Count, IsConnected());
+    LogInfo(F("phase 0x%X, ledControl 0x%X, encoder %ld, isConnected %d\n"),
+              ttr.Phase, ttr.LEDControl, ttr.FrontEncoder, IsConnected());
     preLogTime = curTime;
   }
 }
