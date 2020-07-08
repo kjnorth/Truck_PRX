@@ -20,6 +20,8 @@ void setup() {
 
   rtt.SwitchStatus = 0x9D;
   rtt.SolenoidStatus = 0x5E;
+  rtt.Pitch = 1.08;
+  // rtt.Roll = 5.69;
 
 #ifdef RF_USE_IRQ_PIN
   pinMode(RF_IRQ_PIN, INPUT);
@@ -65,6 +67,8 @@ void loop() {
        * iteration of the main loop */
       rtt.SwitchStatus++;
       rtt.SolenoidStatus++;
+      rtt.Pitch += 0.02;
+      // rtt.Roll += 0.05;
       radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     }
 #ifdef RF_USE_IRQ_PIN

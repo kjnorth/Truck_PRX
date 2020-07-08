@@ -20,7 +20,7 @@ typedef struct
 {
 	uint8_t		SwitchStatus;
 	uint8_t		SolenoidStatus;
-	// float			Pitch;
+	float			Pitch;
 	// float			Roll;
 } RX_TO_TX;
 
