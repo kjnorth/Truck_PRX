@@ -20,10 +20,8 @@ void setup() {
 
   rtt.SwitchStatus = 0x9D;
   rtt.SolenoidStatus = 0x5E;
-  rtt.Pitch = 1;
-#if ROLL  
-  rtt.Roll = 5;
-#endif
+  rtt.Pitch = 1.1;
+  rtt.Roll = 5.25;
 
 #ifdef RF_USE_IRQ_PIN
   pinMode(RF_IRQ_PIN, INPUT);
@@ -35,13 +33,10 @@ void setup() {
     // RF24 library begin() function modified to enable PRX mode
     radio.setAddressWidth(5); // set address size to 5 bytes
     radio.setChannel(RF_CHANNEL); // set communication channel
-    // radio.setPayloadSize(NUM_RTT_BYTES); // set payload size to number of bytes being SENT
-    radio.enableDynamicPayloads();
     radio.enableAckPayload(); // enable ability to add payload sent with auto ACK
-    radio.enableDynamicAck(); // enable PTX ability to send a packet without requesting an ACK
+    radio.enableDynamicPayloads(); // must be enabled to attach payload to ACK
     radio.setPALevel(RF24_PA_LOW); // set power amplifier level. Using LOW for tests on bench. Should use HIGH on PL/Truck
     radio.setDataRate(RF24_1MBPS); // set data rate to most reliable speed
-    // radio.setDataRate(RF24_2MBPS);
     radio.openReadingPipe(0, RF_PRX_READ_ADDR);
     radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     radio.startListening(); // PRX now needs to start listening for packets
@@ -71,10 +66,8 @@ void loop() {
        * iteration of the main loop */
       rtt.SwitchStatus++;
       rtt.SolenoidStatus++;
-      rtt.Pitch++;
-#if ROLL      
-      rtt.Roll++;
-#endif      
+      rtt.Pitch += 0.3;
+      rtt.Roll += 0.09; 
       radio.writeAckPayload(0, &rtt, NUM_RTT_BYTES);
     }
 #ifdef RF_USE_IRQ_PIN
