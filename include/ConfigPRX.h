@@ -16,12 +16,16 @@ typedef struct
 	int32_t 	FrontEncoder;
 } TX_TO_RX;
 
+#define ROLL 1
+
 typedef struct
 {
 	uint8_t		SwitchStatus;
 	uint8_t		SolenoidStatus;
-	float			Pitch;
-	// float			Roll;
+	int32_t		Pitch;
+#if ROLL
+	int32_t		Roll;
+#endif
 } RX_TO_TX;
 
 #define NUM_TTR_BYTES sizeof(TX_TO_RX)
